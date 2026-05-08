@@ -126,7 +126,7 @@ Build() {
 }
 
 PostConfig() {
-	echo "Stripping debug symbolKBUILD_BUILD_USERs from modules"
+	echo "Stripping debug symbols from modules"
 	sudo find ${KERNEL_DIR}/modules -name "*.ko" -type f -exec $STRIP_BIN --strip-debug {} \;
 
   	echo "Create modules.tar.gz"
