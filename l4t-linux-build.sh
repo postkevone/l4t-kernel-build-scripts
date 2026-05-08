@@ -6,12 +6,13 @@ export ARCH=arm64
 export CPUS=${CPUS:-$(($(getconf _NPROCESSORS_ONLN) - 1))}
 export CWD="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 export KERNEL_DIR="${CWD}/kernel"
-export KBUILD_BUILD_USER=theofficialgman
+export KBUILD_BUILD_USER=postkevone
 export KBUILD_BUILD_HOST=buildbot
 
 export NX_VER="linux-dev"
 export NV_VER="linux-dev"
-export NG_VER="linux-3.4.0-r32.5"
+# linux-3.4.0-r32.5
+export NG_VER="linux-dev-r32.5"
 export DT_VER="l4t/l4t-r32.5"
 
 export KCFLAGS="-march=armv8-a+simd+crypto+crc -mtune=cortex-a57 --param=l1-cache-line-size=64 --param=l1-cache-size=32 --param=l2-cache-size=2048"
@@ -29,13 +30,13 @@ create_update_modules() {
 Prepare() {
 	echo "Preparing Source"
 	if [[ -z `ls -A ${KERNEL_DIR}/kernel-4.9` ]]; then
-		git clone -b "${NX_VER}" --single-branch https://github.com/theofficialgman/switch-l4t-kernel-4.9.git "${KERNEL_DIR}/kernel-4.9"
+		git clone -b "${NX_VER}" --single-branch https://github.com/postkevone/switch-l4t-kernel-4.9.git "${KERNEL_DIR}/kernel-4.9"
 	fi
 
 	if [[ -z $(ls -A ${KERNEL_DIR}/nvidia) ]]; then
-		git clone -b ${NV_VER} --single-branch https://github.com/theofficialgman/switch-l4t-kernel-nvidia.git "${KERNEL_DIR}/nvidia"
-		git clone -b ${NX_VER} --single-branch https://github.com/theofficialgman/switch-l4t-platform-t210-nx.git "${KERNEL_DIR}/hardware/nvidia/platform/t210/nx"
-		git clone -b ${NG_VER} --single-branch https://gitlab.com/switchroot/kernel/l4t-kernel-nvgpu "${KERNEL_DIR}/nvgpu"
+		git clone -b ${NV_VER} --single-branch https://github.com/postkevone/switch-l4t-kernel-nvidia.git "${KERNEL_DIR}/nvidia"
+		git clone -b ${NX_VER} --single-branch https://github.com/postkevone/switch-l4t-platform-t210-nx.git "${KERNEL_DIR}/hardware/nvidia/platform/t210/nx"
+		git clone -b ${NG_VER} --single-branch https://github.com/NaGaa95/switch-l4t-kernel-nvgpu "${KERNEL_DIR}/nvgpu"
 		git clone -b ${DT_VER} --single-branch https://gitlab.com/switchroot/kernel/l4t-soc-t210 "${KERNEL_DIR}/hardware/nvidia/soc/t210"
 		git clone -b ${DT_VER} --single-branch https://gitlab.com/switchroot/kernel/l4t-soc-tegra "${KERNEL_DIR}/hardware/nvidia/soc/tegra/"
 		git clone -b ${DT_VER} --single-branch https://gitlab.com/switchroot/kernel/l4t-platform-tegra-common "${KERNEL_DIR}/hardware/nvidia/platform/tegra/common/"
@@ -97,6 +98,9 @@ Build() {
 
 	cd "${KERNEL_DIR}/kernel-4.9"
 
+	# Prevent Kbuild from appending the '+' to the kernel version
+	touch .scmversion
+
 	# # clean build
 	# make mrproper
 
@@ -122,13 +126,13 @@ Build() {
 }
 
 PostConfig() {
-	echo "Stripping debug symbols from modules"
+	echo "Stripping debug symbolKBUILD_BUILD_USERs from modules"
 	sudo find ${KERNEL_DIR}/modules -name "*.ko" -type f -exec $STRIP_BIN --strip-debug {} \;
 
   	echo "Create modules.tar.gz"
 	create_update_modules "${KERNEL_DIR}/modules/lib/" "${KERNEL_DIR}/modules.tar.gz"
 
-	mkimage -A arm64 -O linux -T kernel -C gzip -a 0x80200000 -e 0x80200000 -n theofficialgman-L4T -d ${KERNEL_DIR}/kernel-4.9/arch/arm64/boot/zImage "${KERNEL_DIR}/uImage"
+	mkimage -A arm64 -O linux -T kernel -C gzip -a 0x80200000 -e 0x80200000 -n CUST-L4T -d ${KERNEL_DIR}/kernel-4.9/arch/arm64/boot/zImage "${KERNEL_DIR}/uImage"
 
 	mkdtimg create "${KERNEL_DIR}/nx-plat.dtimg" --page_size=1000 \
         ${KERNEL_DIR}/kernel-4.9/arch/arm64/boot/dts/tegra210-odin.dtb	 --id=0x4F44494E \
